@@ -1,0 +1,7 @@
+venv/
+.idea/
+.env
+*.pyc
+__pycashe__/
+*.log
+/debug.log
