@@ -31,7 +31,7 @@ class NewsMakeBot:
     async def prepare_news(self, url=None, image_url=None):
         """Подготавливает новость для отправки нейросети """
         if url:
-            with open('prompt.txt','r',encoding='utf-8') as file:
+            with open('prompt.txt', 'r', encoding='utf-8') as file:
                 ai_prompt = str(file.read()) + str(url)
 
             news_text = self.ai_bot.generate_news(prompt=ai_prompt)
@@ -46,26 +46,29 @@ class NewsMakeBot:
         btn_regenerate = types.InlineKeyboardButton(text='Перегенерировать', callback_data="regenerate")
         btn_cancel = types.InlineKeyboardButton(text='Удалить', callback_data="cancel")
         markup = types.InlineKeyboardMarkup()
-        markup.row(btn_approve, btn_cancel,btn_regenerate)
-        if image_url:
-            msg = await self.bot.send_photo(self.chat_id, photo=image_url, caption=text, parse_mode='HTML',
-                                            reply_markup=markup)
-        else:
-            msg = await self.bot.send_message(self.chat_id, parse_mode='HTML', reply_markup=markup)
-        self.user_news[msg.message_id] = text
+        markup.row(btn_approve, btn_cancel, btn_regenerate)
+        try:
+            if image_url:
+                msg = await self.bot.send_photo(self.chat_id, photo=image_url, caption=text, parse_mode='HTML',
+                                                reply_markup=markup)
+
+            else:
+                msg = await self.bot.send_message(self.chat_id, text=text, parse_mode='HTML', reply_markup=markup)
+
+            self.user_news.update({msg.message_id: {'text': text, 'image_url': image_url}})
+        except Exception as e:
+            await  self.bot.send_message(self.chat_id, 'Ошибка слишком длинный ответ нейросети или что то другое')
 
         @self.bot.callback_query_handler(func=lambda call: True)
-        async def approve(call):
+        async def action(call):
             message_id = call.message.message_id
-            news_text = self.user_news.get(message_id)
-            image_url = call.message.photo[-1].file_id
-
+            news_text = self.user_news[message_id]['text']
+            image_url = self.user_news[message_id]['image_url']
             if call.data == 'publish':
-                await self.bot.send_photo(self.channel, photo=image_url, caption=news_text, parse_mode='HTML', )
-                self.user_news = {}
+                await self.bot.send_photo(self.channel, photo=image_url, caption=news_text, parse_mode='HTML')
+
             elif call.data == 'regenerate':
+                await self.prepare_news(url=self.actual_news_url, image_url=image_url, )
+            elif call.data == 'cancel':
                 await self.bot.delete_message(self.chat_id, message_id)
-                await self.prepare_news(url=self.actual_news_url, image_url= image_url,)
-            elif call.data =='cancel':
-                await self.bot.delete_message(self.chat_id, message_id)
-                self.user_news = {}
+                del self.user_news[message_id]
