@@ -1,3 +1,6 @@
+import os
+
+from dotenv import load_dotenv
 from telebot.async_telebot import AsyncTeleBot
 from telebot import types
 import asyncio
@@ -5,18 +8,18 @@ import asyncio
 from ai_generator import AimlBots
 from parcers import NewsParser
 
-
+load_dotenv()
 class NewsMakeBot:
     user_news = {}
-    bot = AsyncTeleBot('7967672239:AAGf5Y7KNol_Ms9lSBP5eq_j25eaIvSaXdw')
-    chat_id = '6464072033'
-    channel = '@test_channel_bota'
+    chat_id = os.getenv('CHAT_ID')
+    bot = AsyncTeleBot(os.getenv('BOT_TOKEN'))
+    channel = os.getenv('Telegram_channel')
     parser = NewsParser()
     actual_news_url = ''
     ai_bot = AimlBots()
 
     async def news_monitoring(self, interval=10):
-
+        """проверяет сайт на наличие новых новостей """
         while True:
             print('идет мониторинг новостей')
             news_url, image = self.parser.parce()
@@ -41,7 +44,7 @@ class NewsMakeBot:
         else:
             print("Ошибка неправильная ссылка ")
 
-    async def send_news(self, text, image_url=None):
+    async def send_news(self, text: str, image_url=None):
         btn_approve = types.InlineKeyboardButton(text='Опубликовать', callback_data="publish")
         btn_regenerate = types.InlineKeyboardButton(text='Перегенерировать', callback_data="regenerate")
         btn_cancel = types.InlineKeyboardButton(text='Удалить', callback_data="cancel")
@@ -49,9 +52,9 @@ class NewsMakeBot:
         markup.row(btn_approve, btn_cancel, btn_regenerate)
         try:
             if image_url:
-                msg = await self.bot.send_photo(self.chat_id, photo=image_url, caption=text, parse_mode='HTML',
+                msg = await self.bot.send_photo(self.chat_id, photo=image_url,
+                                                caption=text, parse_mode='HTML',
                                                 reply_markup=markup)
-
             else:
                 msg = await self.bot.send_message(self.chat_id, text=text, parse_mode='HTML', reply_markup=markup)
 
@@ -72,3 +75,4 @@ class NewsMakeBot:
             elif call.data == 'cancel':
                 await self.bot.delete_message(self.chat_id, message_id)
                 del self.user_news[message_id]
+
