@@ -1,0 +1,9 @@
+services:
+  app:
+    tty: true
+    image: newsbot
+    container_name: NewsBot
+    command: > 
+     bash -c "python main.py"
+
+
