@@ -13,7 +13,7 @@ class NewsMakeBot:
     user_news = {}
     chat_id = os.getenv('CHAT_ID')
     bot = AsyncTeleBot(os.getenv('BOT_TOKEN'))
-    channel = os.getenv('Telegram_channel')
+    channel = os.getenv('TG_CHANNEL')
     parser = NewsParser()
     actual_news_url = ''
     ai_bot = AimlBots()
