@@ -60,7 +60,14 @@ class NewsMakeBot:
 
             self.user_news.update({msg.message_id: {'text': text, 'image_url': image_url}})
         except Exception as e:
-            await  self.bot.send_message(self.chat_id, 'Ошибка слишком длинный ответ нейросети или что то другое')
+            error_markup= types.InlineKeyboardMarkup()
+            error_markup.row(btn_regenerate,btn_cancel)
+
+            msg = await  self.bot.send_message(self.chat_id,
+                                         'Ошибка слишком длинный ответ нейросети или что то другое',
+                                         reply_markup=error_markup)
+            self.user_news.update({msg.message_id: {'text': text, 'image_url': image_url}})
+
 
         @self.bot.callback_query_handler(func=lambda call: True)
         async def action(call):
