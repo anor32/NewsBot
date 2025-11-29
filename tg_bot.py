@@ -1,4 +1,4 @@
-from telebot.async_telebot import  AsyncTeleBot
+from telebot.async_telebot import AsyncTeleBot
 from telebot import types
 import asyncio
 
@@ -15,51 +15,57 @@ class NewsMakeBot:
     actual_news_url = ''
     ai_bot = AimlBots()
 
-    async def news_monitoring(self):
+    async def news_monitoring(self, interval=10):
 
         while True:
-            print('идет мониторинг')
+            print('идет мониторинг новостей')
             news_url, image = self.parser.parce()
             if self.actual_news_url != news_url:
+                print('Новая новость подготавливаю к отправке')
                 self.actual_news_url = news_url
-                await self.prepare_news(news_url,image)
-            await asyncio.sleep(self.interval)
 
-    async def prepare_news(self, url=None, image_url = None):
+                await self.prepare_news(news_url, image)
+            print('мониторинг закончен')
+            await asyncio.sleep(interval)
+
+    async def prepare_news(self, url=None, image_url=None):
+        """Подготавливает новость для отправки нейросети """
         if url:
-            ai_prompt = f"""{url} на основе этой ссылки сделай новость для телеграмма добавь хештеги используй 
-                   html теги для парсинга html текста не оставляй ссылку на статью сделай её сам """
+            with open('prompt.txt','r',encoding='utf-8') as file:
+                ai_prompt = str(file.read()) + str(url)
 
             news_text = self.ai_bot.generate_news(prompt=ai_prompt)
 
             print("Новость подготовлена отправка в бота")
-            await self.send_news(news_text,image_url)
+            await self.send_news(news_text, image_url)
+        else:
+            print("Ошибка неправильная ссылка ")
 
-
-
-
-    async def send_news(self,news_text,image_url =None):
-        btn_approve = types.InlineKeyboardButton(text='Опубликовать', callback_data ="publish")
-        btn_cancel = types.InlineKeyboardButton(text='Отмена', callback_data ="сancel")
-        markup =types.InlineKeyboardMarkup()
-        markup.row(btn_approve,btn_cancel)
-        msg =  await self.bot.send_photo(self.chat_id,photo=image_url,caption=news_text,parse_mode='HTML',reply_markup = markup)
-        self.user_news[msg.message_id] = news_text
-
-
-
+    async def send_news(self, text, image_url=None):
+        btn_approve = types.InlineKeyboardButton(text='Опубликовать', callback_data="publish")
+        btn_regenerate = types.InlineKeyboardButton(text='Перегенерировать', callback_data="regenerate")
+        btn_cancel = types.InlineKeyboardButton(text='Удалить', callback_data="cancel")
+        markup = types.InlineKeyboardMarkup()
+        markup.row(btn_approve, btn_cancel,btn_regenerate)
+        if image_url:
+            msg = await self.bot.send_photo(self.chat_id, photo=image_url, caption=text, parse_mode='HTML',
+                                            reply_markup=markup)
+        else:
+            msg = await self.bot.send_message(self.chat_id, parse_mode='HTML', reply_markup=markup)
+        self.user_news[msg.message_id] = text
 
         @self.bot.callback_query_handler(func=lambda call: True)
         async def approve(call):
             message_id = call.message.message_id
             news_text = self.user_news.get(message_id)
+            image_url = call.message.photo[-1].file_id
+
             if call.data == 'publish':
-                await self.bot.send_message(self.channel, news_text, parse_mode='HTML', )
-            elif call.data == 'cancel':
-                await self.bot.send_message(self.channel, news_text, parse_mode='HTML', )
-
-
-
-
-
-
+                await self.bot.send_photo(self.channel, photo=image_url, caption=news_text, parse_mode='HTML', )
+                self.user_news = {}
+            elif call.data == 'regenerate':
+                await self.bot.delete_message(self.chat_id, message_id)
+                await self.prepare_news(url=self.actual_news_url, image_url= image_url,)
+            elif call.data =='cancel':
+                await self.bot.delete_message(self.chat_id, message_id)
+                self.user_news = {}
