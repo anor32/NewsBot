@@ -23,6 +23,9 @@ class NewsMakeBot:
         while True:
             print('идет мониторинг новостей')
             news_url, image = self.parser.parce()
+            if image == 'Ошибка':
+                await  self.bot.send_message(self.chat_id,news_url)
+                return news_url , image
             if self.actual_news_url != news_url:
                 print('Новая новость подготавливаю к отправке')
                 self.actual_news_url = news_url

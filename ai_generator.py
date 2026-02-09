@@ -1,7 +1,6 @@
 import os
 
 from openai import OpenAI
-url = "https://www.warhammer-community.com/en-gb/articles/ncmflumo/the-warhammer-community-team-paint-the-heroes-of-warhammer-quest-darkwater/"
 
 class AimlBots:
     model = "x-ai/grok-4.1-fast:free"
