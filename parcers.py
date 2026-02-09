@@ -1,11 +1,10 @@
 import re
-from logging import exception
 
-import bs4
+
+
 import httpx
 from bs4 import BeautifulSoup
-from bs4.element import AttributeValueList
-from requests import ReadTimeout
+
 
 
 class NewsParser:
@@ -14,11 +13,11 @@ class NewsParser:
         try:
             source = httpx.get(url=self.url)
         except httpx.ReadTimeout:
-            return ("Превышено время ожидания",'Ошибка')
+            return ("Превышено время ожидания подключения к сайту ",'Ошибка')
         except Exception  as e:
             print(type(e))
             print('ошибка подключения к сайту')
-            return ("Неизвестная ошибка", 'Ошибка')
+            return ("Неизвестная ошибка подключения к сайту", 'Ошибка')
 
         soup = BeautifulSoup(source.text,'lxml')
         news_list = soup.find('ul',class_='row flex flex-wrap gap-y-10 md:gap-y-20 xl:gap-y-30')
